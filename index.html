@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desaku Naik Level — Peta Desa Bata</title>
+<style>
+  :root{
+    --sky:#7ec8f7; --grass:#7ec850; --grass-dark:#5aa832; --dirt:#c9a06c;
+    --card:#ffffff; --ink:#22303c; --muted:#6b7a88; --accent:#e2571e;
+    --accent2:#1e88e5; --ok:#2e9e4f; --line:#e3e9ee;
+    --radius:16px; --shadow:0 4px 14px rgba(34,48,60,.14);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg, var(--sky) 0%, #bfe6ff 220px, #eaf7ff 100%);
+    min-height:100vh;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:14px 12px 40px;}
+
+  /* ---------- Header ---------- */
+  header{text-align:center; padding:10px 0 4px;}
+  header h1{
+    font-size:clamp(26px, 7vw, 40px); font-weight:900; letter-spacing:.5px;
+    color:#fff; text-shadow:0 3px 0 rgba(34,48,60,.35), 0 6px 14px rgba(34,48,60,.25);
+  }
+  header .sub{color:#10344f; font-weight:600; margin-top:2px; font-size:14px;}
+  .level-banner{
+    margin:12px auto 0; max-width:420px; background:#ffd23f; color:#5b4300;
+    font-weight:800; padding:9px 14px; border-radius:999px; box-shadow:var(--shadow);
+    border:3px solid #fff; font-size:15px;
+  }
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; margin-top:16px;
+  }
+  .card h2{font-size:19px; margin-bottom:6px;}
+  .card p{font-size:14px; line-height:1.5; color:var(--ink);}
+  .muted{color:var(--muted); font-size:13px;}
+
+  /* ---------- Map ---------- */
+  .map-frame{
+    background:linear-gradient(180deg, #9fe870, var(--grass));
+    border-radius:12px; padding:10px; border:3px solid var(--grass-dark);
+  }
+  .map-grid{
+    display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;
+  }
+  .plot{
+    position:relative; aspect-ratio:1/1; border-radius:10px;
+    background:rgba(255,255,255,.18); border:2px dashed rgba(255,255,255,.55);
+    display:flex; align-items:flex-end; justify-content:center; overflow:hidden;
+  }
+  .plot .plot-label{
+    position:absolute; top:2px; left:4px; font-size:9px; font-weight:700;
+    color:rgba(255,255,255,.85); text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  .plot.occupied{border-style:solid; border-color:rgba(255,255,255,.85); background:rgba(255,255,255,.28);}
+  .plot .name-tag{
+    position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
+    background:rgba(34,48,60,.78); color:#fff; font-size:9px; font-weight:700;
+    padding:1px 6px; border-radius:999px; white-space:nowrap; max-width:96%;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .plot .house{width:86%; height:86%; display:flex; align-items:flex-end; justify-content:center;}
+  .plot .fig{height:82%;}
+  .map-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--muted);}
+  .map-legend b{color:var(--ink);}
+
+  /* ---------- Minifigure (SVG) ---------- */
+  .fig-svg{display:block; height:100%; width:auto;}
+
+  /* ---------- Baru di Desa ---------- */
+  .news-item{display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line);}
+  .news-item:first-of-type{border-top:none;}
+  .news-badge{
+    flex:0 0 auto; background:var(--accent); color:#fff; font-weight:800; font-size:11px;
+    padding:3px 8px; border-radius:999px; margin-top:2px;
+  }
+
+  /* ---------- Avatar maker ---------- */
+  .maker-grid{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media (min-width:560px){ .maker-grid{grid-template-columns:150px 1fr;} }
+  .preview-box{
+    background:linear-gradient(180deg, #cdeeff, #eaffea); border-radius:12px;
+    border:2px solid var(--line); display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-end; padding:10px 6px 8px; min-height:190px;
+  }
+  .preview-box .fig{height:140px;}
+  .preview-name{font-weight:800; font-size:14px; margin-top:6px; text-align:center; word-break:break-word;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-weight:700; font-size:13px; margin-bottom:5px;}
+  .field input[type="text"], .field select{
+    width:100%; padding:10px; border:2px solid var(--line); border-radius:10px;
+    font-size:15px; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  .field input[type="text"]:focus, .field select:focus{outline:none; border-color:var(--accent2);}
+  .chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    border:2px solid var(--line); background:#fff; border-radius:999px; padding:7px 12px;
+    font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; color:var(--ink);
+  }
+  .chip.active{background:var(--accent2); border-color:var(--accent2); color:#fff;}
+  .colors{display:flex; gap:10px; flex-wrap:wrap;}
+  .color-field{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; font-weight:700;}
+  .color-field input[type="color"]{
+    width:52px; height:40px; border:2px solid var(--line); border-radius:10px;
+    padding:2px; background:#fff; cursor:pointer;
+  }
+  .mini-map{display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; max-width:300px;}
+  .mini-plot{
+    aspect-ratio:1/1; border-radius:7px; border:2px solid var(--grass-dark);
+    background:#b6ec8f; cursor:pointer; position:relative; padding:0;
+  }
+  .mini-plot.taken{background:#d8d8d8; border-color:#9aa3ab; cursor:not-allowed;}
+  .mini-plot.selected{background:#ffd23f; border-color:#b98a00; box-shadow:inset 0 0 0 2px #fff;}
+  .mini-plot span{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .btn-add{
+    display:block; width:100%; margin-top:14px; background:var(--ok); color:#fff;
+    border:none; border-radius:12px; padding:14px; font-size:17px; font-weight:800;
+    cursor:pointer; font-family:inherit; box-shadow:var(--shadow);
+  }
+  .btn-add:active{transform:translateY(1px);}
+  .btn-add:disabled{background:#9db8a6; cursor:wait;}
+  .msg{margin-top:10px; padding:11px 12px; border-radius:10px; font-size:14px; font-weight:600; display:none;}
+  .msg.ok{display:block; background:#e4f6e9; color:#14532d; border:2px solid #8fd3a3;}
+  .msg.err{display:block; background:#fdecec; color:#7a1f1f; border:2px solid #f0a8a8;}
+
+  /* ---------- Galeri ---------- */
+  .gallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)); gap:10px; margin-top:10px;}
+  .g-card{
+    background:linear-gradient(180deg, #cdeeff, #eaffea); border:2px solid var(--line);
+    border-radius:12px; padding:8px 4px 6px; text-align:center;
+  }
+  .g-card .fig{height:74px; display:flex; justify-content:center;}
+  .g-card .g-name{font-weight:800; font-size:13px; margin-top:4px; word-break:break-word;}
+  .g-card .g-plot{font-size:11px; color:var(--muted);}
+
+  footer{text-align:center; margin-top:22px; font-size:12px; color:var(--muted);}
+  footer a{color:var(--accent2); font-weight:700; text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>DESAKU NAIK LEVEL</h1>
+    <div class="sub">Peta Desa Bata — desa yang tumbuh tiap episode!</div>
+    <div class="level-banner" id="levelBanner">LEVEL 1 — Desa Bata</div>
+  </header>
+
+  <!-- ============ PETA DESA ============ -->
+  <section class="card">
+    <h2>🗺️ Peta Desa Bata</h2>
+    <div class="map-frame">
+      <div class="map-grid" id="mapGrid"></div>
+    </div>
+    <div class="map-legend">
+      <span>🏠 <b>Bangunan</b></span>
+      <span>🧍 <b>Warga</b></span>
+      <span>⬜ <b>Petak kosong</b> — bisa kamu tempati!</span>
+    </div>
+  </section>
+
+  <!-- ============ BARU DI DESA ============ -->
+  <section class="card">
+    <h2>✨ Baru di Desa</h2>
+    <div id="newsList"></div>
+  </section>
+
+  <!-- ============ BUAT WARGA ============ -->
+  <section class="card">
+    <h2>🧱 Buat Wargamu</h2>
+    <p class="muted" style="margin-bottom:12px;">
+      Syarat: subscribe channel <b>Desaku Naik Level</b> di YouTube.
+      Warga yang kamu buat akan ditinjau dulu — setelah disetujui, wargamu muncul di peta desa dan bisa disorot di video berikutnya!
+    </p>
+    <div class="maker-grid">
+      <div class="preview-box">
+        <div class="fig" id="previewFig"></div>
+        <div class="preview-name" id="previewName">Wargamu</div>
+      </div>
+      <div>
+        <div class="field">
+          <label for="inpNama">Nama warga *</label>
+          <input type="text" id="inpNama" maxlength="24" placeholder="Contoh: Budi">
+        </div>
+        <div class="field">
+          <label>Wajah</label>
+          <div class="chips" id="faceChips"></div>
+        </div>
+        <div class="field">
+          <label>Topi</label>
+          <div class="chips" id="hatChips"></div>
+        </div>
+        <div class="field">
+          <label>Warna</label>
+          <div class="colors">
+            <div class="color-field"><input type="color" id="colKepala" value="#f2cd37"><span>Kepala</span></div>
+            <div class="color-field"><input type="color" id="colBaju" value="#c91a09"><span>Baju</span></div>
+            <div class="color-field"><input type="color" id="colCelana" value="#0055bf"><span>Celana</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Petak tanah (ketuk petak kosong, atau biarkan bebas)</label>
+          <div class="mini-map" id="miniMap"></div>
+          <div class="muted" id="plotInfo" style="margin-top:5px;">Petak: bebas (dipilihkan admin)</div>
+        </div>
+        <div class="field">
+          <label for="inpYt">Username YouTube (bukti subscribe) *</label>
+          <input type="text" id="inpYt" maxlength="40" placeholder="Contoh: @namakamu">
+        </div>
+      </div>
+    </div>
+    <button class="btn-add" id="btnTambah">➕ Tambah Warga</button>
+    <div class="msg" id="formMsg"></div>
+  </section>
+
+  <!-- ============ GALERI WARGA ============ -->
+  <section class="card">
+    <h2>👥 Galeri Warga</h2>
+    <div class="gallery" id="gallery"></div>
+    <p class="muted" id="galleryEmpty" style="display:none;">Belum ada warga. Jadilah warga pertama!</p>
+  </section>
+
+  <footer>
+    Desa Bata tumbuh tiap episode — tonton di
+    <a href="https://www.youtube.com/@DesakuNaikLevel" target="_blank" rel="noopener">Desaku Naik Level</a>
+    dan pilih bangunan berikutnya di komentar!
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   KONFIGURASI — parent mengisi URL Apps Script setelah deploy.
+   ===================================================================== */
+const APPS_SCRIPT_URL = "GANTI_DENGAN_URL_APPS_SCRIPT";
+
+/* Bangunan desa (sumber kebenaran untuk bangunan; warga diambil dari server).
+   petak: "baris R, kolom C" — baris 1..6, kolom 1..5. */
+const BUILDINGS = [
+  { nama: "Rumah Jay", tipe: "rumah", status: "selesai", episode: 1, petak: "baris 3, kolom 3" }
+];
+
+/* Level desa saat ini. */
+const LEVEL = { level: 1, nama: "Desa Bata" };
+
+/* Warga awal (dipakai bila server belum terhubung / fetch gagal). */
+const SEED_RESIDENTS = [
+  { nama: "Jay", wajah: "Senyum", topi: "Topi",
+    warna_kepala: "#f2cd37", warna_baju: "#c91a09", warna_celana: "#0055bf",
+    petak: "baris 3, kolom 3" }
+];
+
+/* Berita perkembangan per episode. */
+const NEWS = [
+  { episode: 1, judul: "Rumah Jay selesai!", teks: "Rumah pertama Desa Bata dibangun Jay — desa resmi naik ke Level 1." }
+];
+
+const FACES = ["Senyum", "Tertawa", "Kaget", "Santai", "Semangat", "Kalem"];
+const HATS  = ["Topi", "Peci", "Kerudung", "Caping", "Tanpa topi"];
+const COLS = 5, ROWS = 6;
+
+/* ---------- State pembuat avatar ---------- */
+const state = {
+  nama: "", wajah: "Senyum", topi: "Topi",
+  warna_kepala: "#f2cd37", warna_baju: "#c91a09", warna_celana: "#0055bf",
+  petak: null /* {r, c} 0-based, atau null = bebas */
+};
+
+/* ---------- Util petak ---------- */
+function parsePetak(petak) {
+  if (!petak) return null;
+  const m = String(petak).match(/baris\s*(\d+)\s*,\s*kolom\s*(\d+)/i);
+  if (!m) return null;
+  const r = parseInt(m[1], 10) - 1, c = parseInt(m[2], 10) - 1;
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+  return { r: r, c: c };
+}
+function petakLabel(rc) {
+  return rc ? ("baris " + (rc.r + 1) + ", kolom " + (rc.c + 1)) : "bebas";
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+  });
+}
+function safeColor(c, fallback) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(c || "")) ? c : fallback;
+}
+
+/* ---------- Gambar minifigure (SVG) ---------- */
+function faceSVG(wajah) {
+  /* Wajah digambar di area kepala: x 30..70, y 14..44 (viewBox 0 0 100 120). */
+  const ink = "#22303c";
+  switch (wajah) {
+    case "Tertawa":
+      return '<circle cx="42" cy="27" r="3" fill="' + ink + '"/><circle cx="58" cy="27" r="3" fill="' + ink + '"/>' +
+             '<path d="M40 34 Q50 46 60 34 Q50 40 40 34 Z" fill="' + ink + '"/>' +
+             '<circle cx="35" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/><circle cx="65" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/>';
+    case "Kaget":
+      return '<circle cx="42" cy="27" r="3.6" fill="' + ink + '"/><circle cx="58" cy="27" r="3.6" fill="' + ink + '"/>' +
+             '<ellipse cx="50" cy="37" rx="4" ry="5" fill="' + ink + '"/>' +
+             '<path d="M37 20 Q42 17 47 20" stroke="' + ink + '" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+             '<path d="M53 20 Q58 17 63 20" stroke="' + ink + '" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    case "Santai":
+      return '<path d="M38 27 Q42 30 46 27" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M54 27 Q58 30 62 27" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M44 36 Q50 39 56 36" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    case "Semangat":
+      return '<path d="M38 29 Q42 24 46 29" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M54 29 Q58 24 62 29" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M41 35 Q50 44 59 35" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<circle cx="35" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/><circle cx="65" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/>';
+    case "Kalem":
+      return '<circle cx="42" cy="28" r="2.6" fill="' + ink + '"/><circle cx="58" cy="28" r="2.6" fill="' + ink + '"/>' +
+             '<path d="M45 37 Q50 39.5 55 37" stroke="' + ink + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    default: /* Senyum */
+      return '<circle cx="42" cy="27" r="3" fill="' + ink + '"/><circle cx="58" cy="27" r="3" fill="' + ink + '"/>' +
+             '<path d="M42 35 Q50 42 58 35" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<circle cx="35" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/><circle cx="65" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/>';
+  }
+}
+function hatSVG(topi) {
+  switch (topi) {
+    case "Topi": /* topi merah ala Jay */
+      return '<path d="M28 18 Q28 4 50 4 Q72 4 72 18 Z" fill="#c91a09"/>' +
+             '<rect x="24" y="16" width="52" height="6" rx="3" fill="#a31306"/>';
+    case "Peci":
+      return '<path d="M30 20 L32 6 Q50 2 68 6 L70 20 Z" fill="#22303c"/>';
+    case "Kerudung":
+      return '<path d="M50 2 Q74 6 74 30 Q74 52 66 58 L60 46 Q68 44 68 30 Q68 14 50 12 Q32 14 32 30 Q32 44 40 46 L34 58 Q26 52 26 30 Q26 6 50 2 Z" fill="#7b4fa6"/>';
+    case "Caping":
+      return '<path d="M50 2 L86 22 Q50 30 14 22 Z" fill="#e3c878" stroke="#bfa04f" stroke-width="2"/>';
+    default: /* Tanpa topi */
+      return '<rect x="44" y="2" width="12" height="7" rx="3" fill="#00000022"/>';
+  }
+}
+function figureSVG(person) {
+  const kepala = safeColor(person.warna_kepala, "#f2cd37");
+  const baju   = safeColor(person.warna_baju,   "#c91a09");
+  const celana = safeColor(person.warna_celana, "#0055bf");
+  return '' +
+  '<svg class="fig-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(person.nama || "warga") + '">' +
+    /* kaki / celana */
+    '<rect x="36" y="88" width="12" height="26" rx="3" fill="' + celana + '"/>' +
+    '<rect x="52" y="88" width="12" height="26" rx="3" fill="' + celana + '"/>' +
+    '<rect x="33" y="110" width="17" height="7" rx="3" fill="#22303c"/>' +
+    '<rect x="50" y="110" width="17" height="7" rx="3" fill="#22303c"/>' +
+    /* badan / baju */
+    '<path d="M34 52 L66 52 L70 90 L30 90 Z" fill="' + baju + '"/>' +
+    '<rect x="46" y="52" width="8" height="38" fill="#00000018"/>' +
+    /* lengan */
+    '<rect x="22" y="54" width="10" height="28" rx="5" fill="' + baju + '" transform="rotate(8 27 56)"/>' +
+    '<rect x="68" y="54" width="10" height="28" rx="5" fill="' + baju + '" transform="rotate(-8 73 56)"/>' +
+    '<circle cx="25" cy="84" r="5.5" fill="' + kepala + '"/>' +
+    '<circle cx="75" cy="84" r="5.5" fill="' + kepala + '"/>' +
+    /* kepala */
+    '<rect x="30" y="10" width="40" height="36" rx="9" fill="' + kepala + '"/>' +
+    faceSVG(person.wajah) +
+    hatSVG(person.topi) +
+  '</svg>';
+}
+function houseSVG() {
+  return '' +
+  '<svg class="fig-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rumah">' +
+    '<path d="M8 44 L50 12 L92 44 Z" fill="#8a4b2a"/>' +
+    '<rect x="18" y="44" width="64" height="48" fill="#f3e2c7"/>' +
+    '<rect x="18" y="44" width="64" height="10" fill="#c91a09"/>' +
+    '<rect x="42" y="62" width="16" height="30" rx="2" fill="#6b3a1e"/>' +
+    '<rect x="24" y="60" width="12" height="12" fill="#bfe6ff" stroke="#6b3a1e" stroke-width="2"/>' +
+    '<rect x="64" y="60" width="12" height="12" fill="#bfe6ff" stroke="#6b3a1e" stroke-width="2"/>' +
+  '</svg>';
+}
+
+/* ---------- Render peta ---------- */
+function renderMap(residents) {
+  const grid = document.getElementById("mapGrid");
+  grid.innerHTML = "";
+  const buildingAt = {}, residentAt = {};
+  BUILDINGS.forEach(function (b) {
+    const rc = parsePetak(b.petak);
+    if (rc) buildingAt[rc.r + "," + rc.c] = b;
+  });
+  residents.forEach(function (p) {
+    const rc = parsePetak(p.petak);
+    if (rc) residentAt[rc.r + "," + rc.c] = p;
+  });
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const key = r + "," + c;
+      const cell = document.createElement("div");
+      cell.className = "plot";
+      cell.innerHTML = '<span class="plot-label">' + (r + 1) + "," + (c + 1) + "</span>";
+      if (buildingAt[key]) {
+        cell.classList.add("occupied");
+        cell.innerHTML += '<div class="house">' + houseSVG() + "</div>" +
+          '<span class="name-tag">' + esc(buildingAt[key].nama) + "</span>";
+      } else if (residentAt[key]) {
+        cell.classList.add("occupied");
+        cell.innerHTML += '<div class="fig">' + figureSVG(residentAt[key]) + "</div>" +
+          '<span class="name-tag">' + esc(residentAt[key].nama) + "</span>";
+      }
+      grid.appendChild(cell);
+    }
+  }
+  renderMiniMap(buildingAt, residentAt);
+}
+
+/* ---------- Mini peta pemilih petak ---------- */
+function renderMiniMap(buildingAt, residentAt) {
+  const mm = document.getElementById("miniMap");
+  mm.innerHTML = "";
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const key = r + "," + c;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mini-plot";
+      btn.title = "baris " + (r + 1) + ", kolom " + (c + 1);
+      if (buildingAt[key]) {
+        btn.classList.add("taken"); btn.disabled = true; btn.innerHTML = "<span>🏠</span>";
+      } else if (residentAt[key]) {
+        btn.classList.add("taken"); btn.disabled = true; btn.innerHTML = "<span>🧍</span>";
+      } else if (state.petak && state.petak.r === r && state.petak.c === c) {
+        btn.classList.add("selected"); btn.innerHTML = "<span>📍</span>";
+      }
+      (function (rr, cc) {
+        btn.addEventListener("click", function () {
+          if (state.petak && state.petak.r === rr && state.petak.c === cc) {
+            state.petak = null; /* ketuk lagi = bebas */
+          } else {
+            state.petak = { r: rr, c: cc };
+          }
+          document.getElementById("plotInfo").textContent =
+            "Petak: " + (state.petak ? petakLabel(state.petak) : "bebas (dipilihkan admin)");
+          renderMiniMap(buildingAt, residentAt);
+        });
+      })(r, c);
+      mm.appendChild(btn);
+    }
+  }
+}
+
+/* ---------- Berita ---------- */
+function renderNews() {
+  const list = document.getElementById("newsList");
+  list.innerHTML = "";
+  NEWS.slice().reverse().forEach(function (n) {
+    const div = document.createElement("div");
+    div.className = "news-item";
+    div.innerHTML = '<span class="news-badge">EP ' + esc(n.episode) + "</span>" +
+      "<div><b>" + esc(n.judul) + "</b><p>" + esc(n.teks) + "</p></div>";
+    list.appendChild(div);
+  });
+}
+
+/* ---------- Galeri ---------- */
+function renderGallery(residents) {
+  const g = document.getElementById("gallery");
+  const empty = document.getElementById("galleryEmpty");
+  g.innerHTML = "";
+  empty.style.display = residents.length ? "none" : "block";
+  residents.forEach(function (p) {
+    const card = document.createElement("div");
+    card.className = "g-card";
+    card.innerHTML = '<div class="fig">' + figureSVG(p) + "</div>" +
+      '<div class="g-name">' + esc(p.nama) + "</div>" +
+      '<div class="g-plot">' + esc(p.petak || "bebas") + "</div>";
+    g.appendChild(card);
+  });
+}
+
+/* ---------- Ambil warga dari server ---------- */
+function loadResidents() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("GANTI_DENGAN") === 0) {
+    renderMap(SEED_RESIDENTS); renderGallery(SEED_RESIDENTS); return;
+  }
+  fetch(APPS_SCRIPT_URL + "?action=residents")
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      const list = Array.isArray(data) ? data : (data && data.residents) || [];
+      const clean = list.filter(function (p) { return p && p.nama; });
+      renderMap(clean); renderGallery(clean);
+    })
+    .catch(function () {
+      renderMap(SEED_RESIDENTS); renderGallery(SEED_RESIDENTS);
+    });
+}
+
+/* ---------- Pembuat avatar ---------- */
+function buildChips(containerId, options, key) {
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  options.forEach(function (opt) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (state[key] === opt ? " active" : "");
+    b.textContent = opt;
+    b.addEventListener("click", function () {
+      state[key] = opt;
+      buildChips(containerId, options, key);
+      updatePreview();
+    });
+    box.appendChild(b);
+  });
+}
+function updatePreview() {
+  document.getElementById("previewFig").innerHTML = figureSVG(state);
+  document.getElementById("previewName").textContent = state.nama.trim() || "Wargamu";
+}
+function showMsg(kind, text) {
+  const m = document.getElementById("formMsg");
+  m.className = "msg " + kind;
+  m.textContent = text;
+}
+
+/* ---------- Kirim warga ---------- */
+function submitResident() {
+  const nama = document.getElementById("inpNama").value.trim();
+  const yt = document.getElementById("inpYt").value.trim();
+  if (!nama) { showMsg("err", "Isi dulu nama wargamu ya!"); return; }
+  if (!yt) { showMsg("err", "Isi username YouTube kamu (bukti subscribe) ya!"); return; }
+
+  const payload = {
+    nama: nama,
+    username_yt: yt,
+    wajah: state.wajah,
+    topi: state.topi,
+    warna_kepala: state.warna_kepala,
+    warna_baju: state.warna_baju,
+    warna_celana: state.warna_celana,
+    petak: petakLabel(state.petak)
+  };
+
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("GANTI_DENGAN") === 0) {
+    showMsg("err", "Server pendaftaran belum terhubung. Coba lagi nanti ya!");
+    return;
+  }
+
+  const btn = document.getElementById("btnTambah");
+  btn.disabled = true;
+  btn.textContent = "Mengirim…";
+
+  /* no-cors + text/plain: menghindari preflight CORS Apps Script. */
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(function () {
+    showMsg("ok", "Wargamu terkirim! Setelah disetujui, wargamu akan muncul di peta desa.");
+    btn.textContent = "➕ Tambah Warga";
+    btn.disabled = false;
+  }).catch(function () {
+    showMsg("err", "Gagal mengirim. Cek koneksi internetmu lalu coba lagi ya!");
+    btn.textContent = "➕ Tambah Warga";
+    btn.disabled = false;
+  });
+}
+
+/* ---------- Init ---------- */
+document.getElementById("levelBanner").textContent = "LEVEL " + LEVEL.level + " — " + LEVEL.nama;
+renderNews();
+loadResidents();
+
+buildChips("faceChips", FACES, "wajah");
+buildChips("hatChips", HATS, "topi");
+
+document.getElementById("inpNama").addEventListener("input", function (e) {
+  state.nama = e.target.value; updatePreview();
+});
+document.getElementById("colKepala").addEventListener("input", function (e) {
+  state.warna_kepala = e.target.value; updatePreview();
+});
+document.getElementById("colBaju").addEventListener("input", function (e) {
+  state.warna_baju = e.target.value; updatePreview();
+});
+document.getElementById("colCelana").addEventListener("input", function (e) {
+  state.warna_celana = e.target.value; updatePreview();
+});
+document.getElementById("btnTambah").addEventListener("click", submitResident);
+updatePreview();
+</script>
+</body>
+</html>
