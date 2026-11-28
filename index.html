@@ -48,7 +48,7 @@
     border-radius:12px; padding:10px; border:3px solid var(--grass-dark);
   }
   .map-grid{
-    display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;
+    display:grid; grid-template-columns:repeat(6, 1fr); gap:6px;
   }
   .plot{
     position:relative; aspect-ratio:1/1; border-radius:10px;
@@ -117,7 +117,7 @@
     cursor:pointer; padding:0;
   }
   .swatch.active{border-color:var(--ink); box-shadow:0 0 0 2px #fff inset;}
-  .mini-map{display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; max-width:300px;}
+  .mini-map{display:grid; grid-template-columns:repeat(6, 1fr); gap:4px; max-width:340px;}
   .mini-plot{
     aspect-ratio:1/1; border-radius:7px; border:2px solid var(--grass-dark);
     background:#b6ec8f; cursor:pointer; position:relative; padding:0;
@@ -204,12 +204,20 @@
           <div class="chips" id="hatChips"></div>
         </div>
         <div class="field">
+          <label>Profesi (baru di Level 2!)</label>
+          <div class="chips" id="profesiChips"></div>
+        </div>
+        <div class="field">
           <label>Warna</label>
           <div class="colors">
             <div class="color-field"><input type="color" id="colKepala" value="#f2cd37"><span>Kepala</span><div class="swatches" id="swKepala"></div></div>
             <div class="color-field"><input type="color" id="colBaju" value="#c91a09"><span>Baju</span><div class="swatches" id="swBaju"></div></div>
             <div class="color-field"><input type="color" id="colCelana" value="#0055bf"><span>Celana</span><div class="swatches" id="swCelana"></div></div>
           </div>
+        </div>
+        <div class="field">
+          <label>Aksesoris</label>
+          <div class="chips" id="aksesorisChips"></div>
         </div>
         <div class="field">
           <label>Petak tanah (ketuk petak kosong, atau biarkan bebas)</label>
@@ -247,7 +255,7 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSt21pz53p8WJqOUKEp8zLW3Po7w_fID0M_pz4PiYtiyAoIo0aqZLGAWWaTbxkipKz/exec";
 
 /* Bangunan desa (sumber kebenaran untuk bangunan; warga diambil dari server).
-   petak: "baris R, kolom C" — baris 1..6, kolom 1..5. */
+   petak: "baris R, kolom C" — baris 1..8, kolom 1..6 (diperluas saat Level 2). */
 const BUILDINGS = [
   { nama: "Rumah Jay", tipe: "rumah", status: "selesai", episode: 1, petak: "baris 3, kolom 3" },
   { nama: "Warung Kopi", tipe: "warung", status: "selesai", episode: 3, petak: "baris 3, kolom 4" },
@@ -256,7 +264,7 @@ const BUILDINGS = [
 ];
 
 /* Level desa saat ini. */
-const LEVEL = { level: 1, nama: "Desa Bata" };
+const LEVEL = { level: 2, nama: "Desa Bata" };
 
 /* Warga awal (dipakai bila server belum terhubung / fetch gagal). */
 const SEED_RESIDENTS = [
@@ -269,22 +277,26 @@ const SEED_RESIDENTS = [
 const NEWS = [
   { episode: 1, judul: "Rumah Jay selesai!", teks: "Rumah pertama Desa Bata dibangun Jay — desa resmi naik ke Level 1." },
   { episode: 3, judul: "Warung Kopi resmi buka!", teks: "Request Chen jadi nyata — warga gotong royong membangun warung kopi pertama Desa Bata. Tonton Episode 3 di YouTube Desaku Naik Level." },
-  { episode: 4, judul: "Taman & Penginapan resmi dibuka!", teks: "Hasil polling: Taman menang! Request Cila, Chuki, dan Juna dibangun gotong royong, plus penginapan request BokermenMoi untuk menampung warga baru. Tonton Episode 4: https://youtube.com/shorts/fRhaGelUxe0" }
+  { episode: 4, judul: "Taman & Penginapan resmi dibuka!", teks: "Hasil polling: Taman menang! Request Cila, Chuki, dan Juna dibangun gotong royong, plus penginapan request BokermenMoi untuk menampung warga baru. Tonton Episode 4: https://youtube.com/shorts/fRhaGelUxe0" },
+  { episode: 4, badge: "LEVEL 2", judul: "Desa Bata naik Level 2! Peta diperluas", teks: "Desa Bata resmi naik ke Level 2 — peta diperluas jadi 6×8, banyak petak baru tersedia! Sekarang juga ada pilihan Profesi dan aksesoris baru di pembuat avatar. Pengumuman: https://www.youtube.com/post/UgkxGqMvTxkbNo4FWIayL0-KeKRxhawNIJ6h" }
 ];
 
-const FACES = ["Senyum", "Tertawa", "Kaget", "Santai", "Semangat", "Kalem", "Kedip", "Cemberut", "Bingung", "Cinta", "Serius"];
-const HATS  = ["Topi", "Peci", "Kerudung", "Caping", "Mahkota", "Helm", "Tanduk", "Topi Jerami", "Blangkon", "Tanpa topi"];
+const FACES = ["Senyum", "Tertawa", "Kaget", "Santai", "Semangat", "Kalem", "Kedip", "Cemberut", "Bingung", "Cinta", "Serius", "Tertawa Lebar", "Ngantuk", "Kaget Banget"];
+const HATS  = ["Topi", "Peci", "Kerudung", "Caping", "Mahkota", "Helm", "Tanduk", "Topi Jerami", "Blangkon", "Topi Koboi", "Bandana", "Topi Ulang Tahun", "Peci Hitam", "Tanpa topi"];
+const PROFESIS = ["Belum ada", "Petani", "Pedagang", "Guru", "Penjaga Warung", "Tukang", "Nelayan", "Pengrajin"];
+const ACCESSORIES = ["Tanpa aksesoris", "Kacamata", "Kacamata Hitam", "Syal"];
 const PALETTES = {
   kepala: ["#f2cd37", "#ffd9a0", "#e0ac69", "#8d5524", "#ffffff", "#b8c0c8", "#ffb6d9", "#7ed957"],
   baju:   ["#c91a09", "#1e88e5", "#2e9e4f", "#ffd23f", "#e2571e", "#7b4fa6", "#fd79a8", "#00b8a9", "#ffffff", "#22303c"],
   celana: ["#0055bf", "#1b2a6b", "#8a4b2a", "#22303c", "#6b7a88", "#2e7d32", "#c9a06c", "#7a1f1f"]
 };
-const COLS = 5, ROWS = 6;
+const COLS = 6, ROWS = 8;
 
 /* ---------- State pembuat avatar ---------- */
 const state = {
   nama: "", wajah: "Senyum", topi: "Topi",
   warna_kepala: "#f2cd37", warna_baju: "#c91a09", warna_celana: "#0055bf",
+  profesi: "Belum ada", aksesoris: "Tanpa aksesoris",
   petak: null /* {r, c} 0-based, atau null = bebas */
 };
 
@@ -361,6 +373,24 @@ function faceSVG(wajah) {
              '<path d="M53 22 L63 22" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/>' +
              '<circle cx="42" cy="28" r="2.8" fill="' + ink + '"/><circle cx="58" cy="28" r="2.8" fill="' + ink + '"/>' +
              '<path d="M44 38 L56 38" stroke="' + ink + '" stroke-width="2.6" stroke-linecap="round"/>';
+    case "Tertawa Lebar":
+      return '<path d="M37 29 Q42 23 47 29" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<path d="M53 29 Q58 23 63 29" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<path d="M38 34 Q50 50 62 34 Q50 41 38 34 Z" fill="' + ink + '"/>' +
+             '<path d="M44 42 Q50 46 56 42 Q50 44 44 42 Z" fill="#e2571e"/>' +
+             '<circle cx="34" cy="34" r="3.6" fill="#f4a6a6" opacity=".85"/><circle cx="66" cy="34" r="3.6" fill="#f4a6a6" opacity=".85"/>';
+    case "Ngantuk":
+      return '<path d="M37 26 Q42 29 47 26" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<path d="M53 26 Q58 29 63 26" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<path d="M37 22 Q42 20 47 22" stroke="' + ink + '" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+             '<path d="M53 22 Q58 20 63 22" stroke="' + ink + '" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+             '<ellipse cx="50" cy="38" rx="4.5" ry="3.4" fill="' + ink + '"/>';
+    case "Kaget Banget":
+      return '<circle cx="42" cy="27" r="5" fill="#fff"/><circle cx="58" cy="27" r="5" fill="#fff"/>' +
+             '<circle cx="42" cy="27" r="2.2" fill="' + ink + '"/><circle cx="58" cy="27" r="2.2" fill="' + ink + '"/>' +
+             '<path d="M36 17 Q42 13 48 17" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M52 17 Q58 13 64 17" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<ellipse cx="50" cy="39" rx="5" ry="6" fill="' + ink + '"/>';
     default: /* Senyum */
       return '<circle cx="42" cy="27" r="3" fill="' + ink + '"/><circle cx="58" cy="27" r="3" fill="' + ink + '"/>' +
              '<path d="M42 35 Q50 42 58 35" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
@@ -398,8 +428,44 @@ function hatSVG(topi) {
              '<path d="M30 20 L24 26 Q30 28 34 24 Z" fill="#4a2f1d"/>' +
              '<path d="M70 20 L76 26 Q70 28 66 24 Z" fill="#4a2f1d"/>' +
              '<circle cx="50" cy="10" r="2.6" fill="#c9a06c"/>';
+    case "Topi Koboi":
+      return '<ellipse cx="50" cy="20" rx="38" ry="6.5" fill="#8a4b2a"/>' +
+             '<path d="M36 18 Q36 5 50 5 Q64 5 64 18 Z" fill="#a05c33"/>' +
+             '<path d="M36 14 Q50 18 64 14 L64 18 Q50 22 36 18 Z" fill="#6b3a1e"/>';
+    case "Bandana":
+      return '<path d="M29 18 Q30 5 50 5 Q70 5 71 18 L71 23 Q50 18 29 23 Z" fill="#1e88e5"/>' +
+             '<circle cx="42" cy="13" r="1.8" fill="#fff"/><circle cx="52" cy="10" r="1.8" fill="#fff"/><circle cx="60" cy="14" r="1.8" fill="#fff"/>' +
+             '<path d="M71 20 L79 27 Q73 30 69 25 Z" fill="#1565c0"/>';
+    case "Topi Ulang Tahun":
+      return '<path d="M50 0 L64 22 L36 22 Z" fill="#fd79a8"/>' +
+             '<path d="M44 11 L56 11 L59 17 L41 17 Z" fill="#ffd23f"/>' +
+             '<circle cx="50" cy="2" r="4" fill="#1e88e5"/>';
+    case "Peci Hitam":
+      return '<path d="M30 20 L32 6 Q50 2 68 6 L70 20 Z" fill="#111111"/>' +
+             '<rect x="31" y="17" width="38" height="3" fill="#d9a400"/>';
     default: /* Tanpa topi */
       return '<rect x="44" y="2" width="12" height="7" rx="3" fill="#00000022"/>';
+  }
+}
+function accessorySVG(aksesoris) {
+  switch (aksesoris) {
+    case "Kacamata":
+      return '<rect x="34" y="21" width="14" height="12" rx="4" fill="#bfe6ff" fill-opacity=".45" stroke="#22303c" stroke-width="2.4"/>' +
+             '<rect x="52" y="21" width="14" height="12" rx="4" fill="#bfe6ff" fill-opacity=".45" stroke="#22303c" stroke-width="2.4"/>' +
+             '<path d="M48 25 L52 25" stroke="#22303c" stroke-width="2.4" stroke-linecap="round"/>' +
+             '<path d="M34 24 L29 22 M66 24 L71 22" stroke="#22303c" stroke-width="2.2" stroke-linecap="round"/>';
+    case "Kacamata Hitam":
+      return '<rect x="33" y="21" width="15" height="12" rx="4" fill="#111111"/>' +
+             '<rect x="52" y="21" width="15" height="12" rx="4" fill="#111111"/>' +
+             '<path d="M48 24 L52 24" stroke="#111111" stroke-width="2.6" stroke-linecap="round"/>' +
+             '<path d="M33 23 L28 21 M67 23 L72 21" stroke="#111111" stroke-width="2.4" stroke-linecap="round"/>' +
+             '<path d="M37 30 L42 24 M56 30 L61 24" stroke="#ffffff" stroke-width="1.8" opacity=".55" stroke-linecap="round"/>';
+    case "Syal":
+      return '<path d="M32 46 Q50 54 68 46 L68 54 Q50 62 32 54 Z" fill="#e2571e"/>' +
+             '<rect x="56" y="52" width="10" height="20" rx="3" fill="#e2571e"/>' +
+             '<path d="M56 68 L66 68 M56 72 L66 72" stroke="#ffd23f" stroke-width="2.2"/>';
+    default: /* Tanpa aksesoris */
+      return "";
   }
 }
 function figureSVG(person) {
@@ -425,6 +491,7 @@ function figureSVG(person) {
     '<rect x="30" y="10" width="40" height="36" rx="9" fill="' + kepala + '"/>' +
     faceSVG(person.wajah) +
     hatSVG(person.topi) +
+    accessorySVG(person.aksesoris) +
   '</svg>';
 }
 function houseSVG() {
@@ -515,7 +582,7 @@ function renderNews() {
   NEWS.slice().reverse().forEach(function (n) {
     const div = document.createElement("div");
     div.className = "news-item";
-    div.innerHTML = '<span class="news-badge">EP ' + esc(n.episode) + "</span>" +
+    div.innerHTML = '<span class="news-badge">' + esc(n.badge || ("EP " + n.episode)) + "</span>" +
       "<div><b>" + esc(n.judul) + "</b><p>" + esc(n.teks) + "</p></div>";
     list.appendChild(div);
   });
@@ -532,6 +599,7 @@ function renderGallery(residents) {
     card.className = "g-card";
     card.innerHTML = '<div class="fig">' + figureSVG(p) + "</div>" +
       '<div class="g-name">' + esc(p.nama) + "</div>" +
+      (p.profesi && p.profesi !== "Belum ada" ? '<div class="g-plot">💼 ' + esc(p.profesi) + "</div>" : "") +
       '<div class="g-plot">' + esc(p.petak || "bebas") + "</div>";
     g.appendChild(card);
   });
@@ -616,6 +684,8 @@ function submitResident() {
     warna_kepala: state.warna_kepala,
     warna_baju: state.warna_baju,
     warna_celana: state.warna_celana,
+    profesi: state.profesi,
+    aksesoris: state.aksesoris,
     petak: petakLabel(state.petak)
   };
 
@@ -652,6 +722,8 @@ loadResidents();
 
 buildChips("faceChips", FACES, "wajah");
 buildChips("hatChips", HATS, "topi");
+buildChips("profesiChips", PROFESIS, "profesi");
+buildChips("aksesorisChips", ACCESSORIES, "aksesoris");
 
 document.getElementById("inpNama").addEventListener("input", function (e) {
   state.nama = e.target.value; updatePreview();
