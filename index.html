@@ -111,6 +111,12 @@
     width:52px; height:40px; border:2px solid var(--line); border-radius:10px;
     padding:2px; background:#fff; cursor:pointer;
   }
+  .swatches{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; max-width:180px; justify-content:center;}
+  .swatch{
+    width:24px; height:24px; border-radius:8px; border:2px solid rgba(34,48,60,.25);
+    cursor:pointer; padding:0;
+  }
+  .swatch.active{border-color:var(--ink); box-shadow:0 0 0 2px #fff inset;}
   .mini-map{display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; max-width:300px;}
   .mini-plot{
     aspect-ratio:1/1; border-radius:7px; border:2px solid var(--grass-dark);
@@ -200,9 +206,9 @@
         <div class="field">
           <label>Warna</label>
           <div class="colors">
-            <div class="color-field"><input type="color" id="colKepala" value="#f2cd37"><span>Kepala</span></div>
-            <div class="color-field"><input type="color" id="colBaju" value="#c91a09"><span>Baju</span></div>
-            <div class="color-field"><input type="color" id="colCelana" value="#0055bf"><span>Celana</span></div>
+            <div class="color-field"><input type="color" id="colKepala" value="#f2cd37"><span>Kepala</span><div class="swatches" id="swKepala"></div></div>
+            <div class="color-field"><input type="color" id="colBaju" value="#c91a09"><span>Baju</span><div class="swatches" id="swBaju"></div></div>
+            <div class="color-field"><input type="color" id="colCelana" value="#0055bf"><span>Celana</span><div class="swatches" id="swCelana"></div></div>
           </div>
         </div>
         <div class="field">
@@ -263,8 +269,13 @@ const NEWS = [
   { episode: 3, judul: "Warung Kopi resmi buka!", teks: "Request Chen jadi nyata — warga gotong royong membangun warung kopi pertama Desa Bata. Tonton Episode 3 di YouTube Desaku Naik Level." }
 ];
 
-const FACES = ["Senyum", "Tertawa", "Kaget", "Santai", "Semangat", "Kalem"];
-const HATS  = ["Topi", "Peci", "Kerudung", "Caping", "Tanpa topi"];
+const FACES = ["Senyum", "Tertawa", "Kaget", "Santai", "Semangat", "Kalem", "Kedip", "Cemberut", "Bingung", "Cinta", "Serius"];
+const HATS  = ["Topi", "Peci", "Kerudung", "Caping", "Mahkota", "Helm", "Tanduk", "Topi Jerami", "Blangkon", "Tanpa topi"];
+const PALETTES = {
+  kepala: ["#f2cd37", "#ffd9a0", "#e0ac69", "#8d5524", "#ffffff", "#b8c0c8", "#ffb6d9", "#7ed957"],
+  baju:   ["#c91a09", "#1e88e5", "#2e9e4f", "#ffd23f", "#e2571e", "#7b4fa6", "#fd79a8", "#00b8a9", "#ffffff", "#22303c"],
+  celana: ["#0055bf", "#1b2a6b", "#8a4b2a", "#22303c", "#6b7a88", "#2e7d32", "#c9a06c", "#7a1f1f"]
+};
 const COLS = 5, ROWS = 6;
 
 /* ---------- State pembuat avatar ---------- */
@@ -321,6 +332,32 @@ function faceSVG(wajah) {
     case "Kalem":
       return '<circle cx="42" cy="28" r="2.6" fill="' + ink + '"/><circle cx="58" cy="28" r="2.6" fill="' + ink + '"/>' +
              '<path d="M45 37 Q50 39.5 55 37" stroke="' + ink + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    case "Kedip":
+      return '<circle cx="42" cy="27" r="3" fill="' + ink + '"/>' +
+             '<path d="M54 27 Q58 30 62 27" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M42 35 Q50 42 58 35" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<circle cx="35" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/><circle cx="65" cy="33" r="3.4" fill="#f4a6a6" opacity=".8"/>';
+    case "Cemberut":
+      return '<path d="M37 21 L47 25" stroke="' + ink + '" stroke-width="2.6" stroke-linecap="round"/>' +
+             '<path d="M63 21 L53 25" stroke="' + ink + '" stroke-width="2.6" stroke-linecap="round"/>' +
+             '<circle cx="42" cy="29" r="2.8" fill="' + ink + '"/><circle cx="58" cy="29" r="2.8" fill="' + ink + '"/>' +
+             '<path d="M43 40 Q50 34 57 40" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+    case "Bingung":
+      return '<path d="M37 20 Q42 16 47 20" stroke="' + ink + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+             '<path d="M53 23 L63 23" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round"/>' +
+             '<circle cx="42" cy="28" r="3" fill="' + ink + '"/>' +
+             '<path d="M54 28 Q58 31 62 28" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+             '<path d="M42 38 Q46 35 50 38 Q54 41 58 38" stroke="' + ink + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    case "Cinta":
+      return '<path d="M42 31 C37 27 37 22 42 23 C47 22 47 27 42 31 Z" fill="#e2571e"/>' +
+             '<path d="M58 31 C53 27 53 22 58 23 C63 22 63 27 58 31 Z" fill="#e2571e"/>' +
+             '<path d="M42 36 Q50 43 58 36" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+             '<circle cx="35" cy="34" r="3.4" fill="#f4a6a6" opacity=".8"/><circle cx="65" cy="34" r="3.4" fill="#f4a6a6" opacity=".8"/>';
+    case "Serius":
+      return '<path d="M37 22 L47 22" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/>' +
+             '<path d="M53 22 L63 22" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/>' +
+             '<circle cx="42" cy="28" r="2.8" fill="' + ink + '"/><circle cx="58" cy="28" r="2.8" fill="' + ink + '"/>' +
+             '<path d="M44 38 L56 38" stroke="' + ink + '" stroke-width="2.6" stroke-linecap="round"/>';
     default: /* Senyum */
       return '<circle cx="42" cy="27" r="3" fill="' + ink + '"/><circle cx="58" cy="27" r="3" fill="' + ink + '"/>' +
              '<path d="M42 35 Q50 42 58 35" stroke="' + ink + '" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
@@ -338,6 +375,26 @@ function hatSVG(topi) {
       return '<path d="M50 2 Q74 6 74 30 Q74 52 66 58 L60 46 Q68 44 68 30 Q68 14 50 12 Q32 14 32 30 Q32 44 40 46 L34 58 Q26 52 26 30 Q26 6 50 2 Z" fill="#7b4fa6"/>';
     case "Caping":
       return '<path d="M50 2 L86 22 Q50 30 14 22 Z" fill="#e3c878" stroke="#bfa04f" stroke-width="2"/>';
+    case "Mahkota":
+      return '<path d="M30 20 L30 8 L38 15 L44 5 L50 14 L56 5 L62 15 L70 8 L70 20 Z" fill="#ffd23f" stroke="#d9a400" stroke-width="1.6"/>' +
+             '<circle cx="38" cy="16" r="1.8" fill="#c91a09"/><circle cx="50" cy="15" r="1.8" fill="#1e88e5"/><circle cx="62" cy="16" r="1.8" fill="#2e9e4f"/>';
+    case "Helm":
+      return '<path d="M30 18 Q30 4 50 4 Q70 4 70 18 Z" fill="#ffb300"/>' +
+             '<rect x="44" y="3" width="12" height="6" rx="2" fill="#f59e00"/>' +
+             '<rect x="25" y="16" width="50" height="6" rx="3" fill="#f59e00"/>';
+    case "Tanduk":
+      return '<path d="M31 16 Q18 12 16 2 Q27 4 33 10 Z" fill="#f3e2c7" stroke="#c9a06c" stroke-width="1.6"/>' +
+             '<path d="M69 16 Q82 12 84 2 Q73 4 67 10 Z" fill="#f3e2c7" stroke="#c9a06c" stroke-width="1.6"/>' +
+             '<rect x="44" y="2" width="12" height="7" rx="3" fill="#00000022"/>';
+    case "Topi Jerami":
+      return '<ellipse cx="50" cy="19" rx="36" ry="6" fill="#e3c878" stroke="#bfa04f" stroke-width="1.6"/>' +
+             '<path d="M36 17 Q37 6 50 6 Q63 6 64 17 Z" fill="#ecd28a"/>' +
+             '<rect x="36" y="14" width="28" height="4" fill="#c91a09"/>';
+    case "Blangkon":
+      return '<path d="M30 20 Q30 6 50 6 Q70 6 70 20 L66 20 Q66 12 50 12 Q34 12 34 20 Z" fill="#4a2f1d"/>' +
+             '<path d="M30 20 L24 26 Q30 28 34 24 Z" fill="#4a2f1d"/>' +
+             '<path d="M70 20 L76 26 Q70 28 66 24 Z" fill="#4a2f1d"/>' +
+             '<circle cx="50" cy="10" r="2.6" fill="#c9a06c"/>';
     default: /* Tanpa topi */
       return '<rect x="44" y="2" width="12" height="7" rx="3" fill="#00000022"/>';
   }
@@ -511,6 +568,26 @@ function buildChips(containerId, options, key) {
     box.appendChild(b);
   });
 }
+function buildSwatches(containerId, palette, inputId, key) {
+  const box = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  box.innerHTML = "";
+  palette.forEach(function (hex) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch" + (state[key].toLowerCase() === hex.toLowerCase() ? " active" : "");
+    b.style.background = hex;
+    b.title = hex;
+    b.setAttribute("aria-label", "Warna " + hex);
+    b.addEventListener("click", function () {
+      state[key] = hex;
+      input.value = hex;
+      buildSwatches(containerId, palette, inputId, key);
+      updatePreview();
+    });
+    box.appendChild(b);
+  });
+}
 function updatePreview() {
   document.getElementById("previewFig").innerHTML = figureSVG(state);
   document.getElementById("previewName").textContent = state.nama.trim() || "Wargamu";
@@ -577,14 +654,17 @@ document.getElementById("inpNama").addEventListener("input", function (e) {
   state.nama = e.target.value; updatePreview();
 });
 document.getElementById("colKepala").addEventListener("input", function (e) {
-  state.warna_kepala = e.target.value; updatePreview();
+  state.warna_kepala = e.target.value; buildSwatches("swKepala", PALETTES.kepala, "colKepala", "warna_kepala"); updatePreview();
 });
 document.getElementById("colBaju").addEventListener("input", function (e) {
-  state.warna_baju = e.target.value; updatePreview();
+  state.warna_baju = e.target.value; buildSwatches("swBaju", PALETTES.baju, "colBaju", "warna_baju"); updatePreview();
 });
 document.getElementById("colCelana").addEventListener("input", function (e) {
-  state.warna_celana = e.target.value; updatePreview();
+  state.warna_celana = e.target.value; buildSwatches("swCelana", PALETTES.celana, "colCelana", "warna_celana"); updatePreview();
 });
+buildSwatches("swKepala", PALETTES.kepala, "colKepala", "warna_kepala");
+buildSwatches("swBaju", PALETTES.baju, "colBaju", "warna_baju");
+buildSwatches("swCelana", PALETTES.celana, "colCelana", "warna_celana");
 document.getElementById("btnTambah").addEventListener("click", submitResident);
 updatePreview();
 </script>
